@@ -18,9 +18,18 @@ st.title("🎮 游戏项目月份数据对比看板")
 # 3. 模拟数据（基于你之前的35个项目）
 data = {
     "项目名称": [f"项目 {i:02d}" for i in range(1, 36)],
-    "1月收入(M)": [round(pd.np.random.uniform(5, 50), 2) for _ in range(35)],
-    "2月收入(M)": [round(pd.np.random.uniform(5, 50), 2) for _ in range(35)],
-    "活跃用户(K)": [round(pd.np.random.uniform(10, 500), 2) for _ in range(35)],
+   import numpy as np  # 先在文件最顶部 import 下面加这一行
+
+# ... 之前的代码保持不变 ...
+
+# 3. 模拟数据（修正后的写法）
+data = {
+    "项目名称": [f"项目 {i:02d}" for i in range(1, 36)],
+    "1月收入(M)": [round(np.random.uniform(5, 50), 2) for _ in range(35)],
+    "2月收入(M)": [round(np.random.uniform(5, 50), 2) for _ in range(35)],
+    "活跃用户(K)": [round(np.random.uniform(10, 500), 2) for _ in range(35)],
+    "类别": ["RPG", "SLG", "休闲", "卡牌", "射击"] * 7
+}
     "类别": ["RPG", "SLG", "休闲", "卡牌", "射击"] * 7
 }
 df = pd.DataFrame(data)
