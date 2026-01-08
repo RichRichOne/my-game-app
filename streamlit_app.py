@@ -1,76 +1,103 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
+import plotly.graph_objects as go
+from datetime import datetime
 
-# 1. 科技感 UI 配置
-st.set_page_config(page_title="游戏项目核心看板", layout="wide")
+# --- 页面配置 ---
+st.set_page_config(
+    page_title="游戏项目核心数据看板",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
+# --- 自定义 CSS 样式 (复刻 Tailwind 风格) ---
 st.markdown("""
-    <style>
-    .stApp { background: #0e1117; color: #ffffff; }
-    [data-metric-container] {
-        background: #1c2128;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 20px;
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8fafc;
     }
+
+    /* 顶部导航栏模拟 */
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: white;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+        border-radius: 0.5rem;
+    }
+
+    /* 指标卡片样式 */
+    .stat-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
+    }
+    .stat-title {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .stat-value {
+        color: #1e293b;
+        font-size: 1.875rem;
+        font-weight: 700;
+        display: flex;
+        align-items: baseline;
+    }
+    .stat-comparison {
+        color: #94a3b8;
+        font-size: 0.875rem;
+        font-weight: 400;
+        margin-left: 0.5rem;
+    }
+    .growth-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    .growth-up { background-color: #ecfdf5; color: #10b981; }
+    .growth-down { background-color: #fef2f2; color: #ef4444; }
+
+    /* 进度条模拟 */
+    .progress-bar-bg {
+        background-color: #f1f5f9;
+        height: 6px;
+        border-radius: 3px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+    .progress-bar-fill { height: 100%; border-radius: 3px; }
+
+    /* 隐藏 Streamlit 默认页眉 */
+    #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
-    </style>
-    """, unsafe_allow_html=True)
+    footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
 
-# 2. 核心功能：允许用户上传自己的 Excel/CSV 存档
-with st.sidebar:
-    st.title("💾 存档管理")
-    uploaded_file = st.file_uploader("导入已有数据", type=["csv", "xlsx"])
-    st.markdown("---")
-    st.info("使用说明：在下方表格修改数据后，点击左侧按钮下载保存。下次使用可在此处重新上传。")
-
-# 3. 初始化数据 (如果没有上传，则使用默认的 35 个项目)
-if uploaded_file is not None:
-    if uploaded_file.name.endswith('.csv'):
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_excel(uploaded_file)
-else:
-    # 这里的模拟数据你可以替换成你真实的 35 条数据
-    np.random.seed(42)
-    data = {
-        "项目名称": [f"项目 {i}" for i in range(1, 36)],
-        "1月营收": np.random.randint(50, 100, 35) * 1000000,
-        "12月营收": np.random.randint(50, 100, 35) * 1000000,
-        "12月DAU": np.random.randint(10, 50, 35) * 100000,
-    }
-    df = pd.DataFrame(data)
-
-# 4. 标题与 KPI（1:1 复刻图 22）
-st.markdown("### 📊 游戏项目核心数据看板")
-c1, c2, c3 = st.columns(3)
-c1.metric("累计充值", "454.14M ₹", "-8.8%", delta_color="inverse")
-c2.metric("累计新增", "927.5K", "-47.4%", delta_color="inverse")
-c3.metric("平均 DAU", "4.11M", "-17.5%", delta_color="inverse")
-
-# 5. 图表区（修正了图 27 的变量错误）
-col_left, col_right = st.columns([4, 6])
-
-with col_left:
-    st.markdown("**Top 15 项目动态排名**")
-    # 关键修正：确保变量名一致
-    top_data = df.nlargest(15, "12月营收")
-    fig_bar = px.bar(top_data, x="项目名称", y=["1月营收", "12月营收"], barmode="group",
-                     template="plotly_dark", color_discrete_sequence=['#8b949e', '#1f6feb'])
-    st.plotly_chart(fig_bar, use_container_width=True)
-
-with col_right:
-    st.markdown("**全量项目增长体量分布**")
-    fig_scatter = px.scatter(df, x="12月DAU", y="12月营收", size="12月营收", color="项目名称",
-                             template="plotly_dark", showlegend=False)
-    st.plotly_chart(fig_scatter, use_container_width=True)
-
-# 6. 编辑器与导出（单机工具的核心）
-st.markdown("**📋 全项目明细对比 (可在下方直接改数)**")
-edited_df = st.data_editor(df, use_container_width=True, hide_index=True)
-
-# 侧边栏提供下载
-with st.sidebar:
-    st.download_button("📤 导出/保存当前数据", edited_df.to_csv(index=False), "game_data_save.csv")
+# --- 初始数据加载 ---
+def get_initial_data():
+    data = [
+        {"id": 1, "name": "项目 1", "jan_new": 27708, "jan_dau": 50493, "jan_rev": 1150700, "dec_new": 6148, "dec_dau": 172481, "dec_rev": 28798955},
+        {"id": 2, "name": "项目 2", "jan_new": 72053, "jan_dau": 204897, "jan_rev": 13692150, "dec_new": 5739, "dec_dau": 110790, "dec_rev": 13340874},
+        {"id": 3, "name": "项目 3",
