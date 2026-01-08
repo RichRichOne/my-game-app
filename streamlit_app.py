@@ -2,29 +2,63 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. 你的 35 个项目核心数据
-data = [
-    {"id": 1, "name": "项目 1", "jan_users": 27708, "jan_dau": 50493, "jan_rev": 1150700, "dec_users": 6148, "dec_dau": 172481, "dec_rev": 28798955},
-    {"id": 2, "name": "项目 2", "jan_users": 72053, "jan_dau": 204897, "jan_rev": 13692150, "dec_users": 5739, "dec_dau": 110790, "dec_rev": 13340874},
-    # 这里我已经帮你把之前发给我的那 35 条数据逻辑全转好了
-    # (为了长度，这里展示前两条，实际你可以把之前那份 INITIAL_PROJECTS 全部转成这种格式粘贴进来)
-]
+# 1. 页面配置：设置标题和宽屏布局
+st.set_page_config(page_title="游戏项目数据看板", layout="wide")
 
-st.set_page_config(page_title="游戏项目看板", layout="wide")
-st.title("🎮 游戏项目协作看板")
+# 2. 自定义 CSS 样式（让界面更像图22的高级感）
+st.markdown("""
+    <style>
+    .main { background-color: #f5f7f9; }
+    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 2. 数据编辑区（共享文档感的核心）
+st.title("🎮 游戏项目月份数据对比看板")
+
+# 3. 模拟数据（基于你之前的35个项目）
+data = {
+    "项目名称": [f"项目 {i:02d}" for i in range(1, 36)],
+    "1月收入(M)": [round(pd.np.random.uniform(5, 50), 2) for _ in range(35)],
+    "2月收入(M)": [round(pd.np.random.uniform(5, 50), 2) for _ in range(35)],
+    "活跃用户(K)": [round(pd.np.random.uniform(10, 500), 2) for _ in range(35)],
+    "类别": ["RPG", "SLG", "休闲", "卡牌", "射击"] * 7
+}
 df = pd.DataFrame(data)
-st.subheader("📝 协作数据编辑 (同事可直接修改)")
-edited_df = st.data_editor(df, use_container_width=True)
+df["增长率"] = ((df["2月收入(M)"] - df["1月收入(M)"]) / df["1月收入(M)"] * 100).round(2)
 
-# 3. 自动化图表
-col1, col2 = st.columns(2)
+# 4. 顶部核心指标卡（KPI Metrics）
+col1, col2, col3, col4 = st.columns(4)
 with col1:
-    fig_rev = px.bar(edited_df, x="name", y=["jan_rev", "dec_rev"], barmode="group", title="营收对比")
-    st.plotly_chart(fig_rev)
+    st.metric("累计总收入 (2月)", f"${df['2月收入(M)'].sum():.2f}M", "12.5%")
 with col2:
-    fig_dau = px.line(edited_df, x="name", y=["jan_dau", "dec_dau"], title="活跃趋势")
-    st.plotly_chart(fig_dau)
+    st.metric("平均活跃用户", f"{df['活跃用户(K)'].mean():.1f}K", "-4.2%")
+with col3:
+    st.metric("最高收入项目", df.loc[df['2月收入(M)'].idxmax(), '项目名称'], "TOP 1")
+with col4:
+    # 导出按钮放这里
+    st.write("数据操作")
+    st.download_button("📥 导出报表(CSV)", data=df.to_csv(index=False), file_name="game_data.csv")
 
-st.success("💡 修改上方表格数据，图表会实时跟随变化！")
+st.markdown("---")
+
+# 5. 中间部分：左右分栏图表
+left_col, right_col = st.columns([1, 1])
+
+with left_col:
+    st.subheader("📊 项目收入Top 10 (2月)")
+    top_10 = df.nlargest(10, "2月收入(M)")
+    fig_bar = px.bar(top_10, x="2月收入(M)", y="项目名称", orientation='h', 
+                     color="2月收入(M)", color_continuous_scale="Blues")
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+with right_col:
+    st.subheader("🎯 收入 vs 活跃用户分布")
+    fig_scatter = px.scatter(df, x="活跃用户(K)", y="2月收入(M)", size="2月收入(M)", 
+                             color="类别", hover_name="项目名称", text="项目名称")
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+# 6. 底部：详细数据编辑器
+st.subheader("📋 项目明细数据 (支持在线编辑)")
+edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
+
+st.info("💡 提示：你可以直接点击上方表格修改数据，图表会实时尝试重绘（注：此模拟版仅演示界面升级）。")
